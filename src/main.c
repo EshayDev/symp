@@ -12,6 +12,7 @@
 #define     BUILTIN_RET     1
 #define     BUILTIN_RET0    1<<1
 #define     BUILTIN_RET1    1<<2
+#define     BUILTIN_RET2    1<<3
 #define     MAX_PATCH_SIZE  8
 
 unsigned char x86_64_ret[]  = {0xC3};                    // ret
@@ -20,11 +21,16 @@ unsigned char x86_64_ret0[] = {0x48, 0x31, 0xC0,         // xor  rax, rax
 unsigned char x86_64_ret1[] = {0x48, 0x31, 0xC0,         // xor  rax, rax
                                0xB0, 0x01,               // mov  al, 0x1
                                0xC3};                    // ret
+unsigned char x86_64_ret2[] = {0x48, 0x31, 0xC0,         // xor  rax, rax
+                               0xB0, 0x02,               // mov  al, 0x2
+                               0xC3};                    // ret
 
 unsigned char arm64_ret[]  = {0xC0, 0x03, 0x5F, 0xD6};   // ret
 unsigned char arm64_ret0[] = {0x00, 0x00, 0x80, 0xD2,    // mov  x0, 0x0
                               0xC0, 0x03, 0x5F, 0xD6};   // ret
-unsigned char arm64_ret1[] = {0x20, 0x00, 0x80, 0xD2,    // mov  x0, 0x0
+unsigned char arm64_ret1[] = {0x20, 0x00, 0x80, 0xD2,    // mov  x0, 0x1
+                              0xC0, 0x03, 0x5F, 0xD6};   // ret
+unsigned char arm64_ret2[] = {0x40, 0x00, 0x80, 0xD2,    // mov  x0, 0x2
                               0xC0, 0x03, 0x5F, 0xD6};   // ret
 
 
@@ -42,7 +48,7 @@ void usage() {
     puts("usage: symp [options] symbol file");
     puts("options:");
     puts("  -a, --arch <arch>         arch of the binary to be patched, only x86_64 and arm64 are supported");
-    puts("  -p, --patch <patch>       use builtin patches, available: ret, ret0, ret1");
+    puts("  -p, --patch <patch>       use builtin patches, available: ret, ret0, ret1, ret2");
     puts("  -b, --binary <binary>     use a binary file as patch");
     puts("  -x, --hex <hex string>    hex string of the patch");
     return;
@@ -107,6 +113,8 @@ int parse_arguments(int argc, char **argv) {
                 builtin_patch = BUILTIN_RET0;
             else if (strcmp("ret1", optarg) == 0)
                 builtin_patch = BUILTIN_RET1;
+            else if (strcmp("ret2", optarg) == 0)
+                builtin_patch = BUILTIN_RET2;
             else {
                 fprintf(stderr, "symp: unknow patch %s\n", optarg);
                 return 1;
@@ -276,6 +284,10 @@ void patch_file(FILE* fp, int cputype, long int symoff) {
                 pat_cnt = sizeof(x86_64_ret1);
                 pat_byt = x86_64_ret1;
                 break;
+            case BUILTIN_RET2:
+                pat_cnt = sizeof(x86_64_ret2);
+                pat_byt = x86_64_ret2;
+                break;
             default:
                 break;
             }
@@ -293,6 +305,10 @@ void patch_file(FILE* fp, int cputype, long int symoff) {
             case BUILTIN_RET1:
                 pat_cnt = sizeof(arm64_ret1);
                 pat_byt = arm64_ret1;
+                break;
+            case BUILTIN_RET2:
+                pat_cnt = sizeof(arm64_ret2);
+                pat_byt = arm64_ret2;
                 break;
             default:
                 break;

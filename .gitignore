@@ -15,4 +15,5 @@
 
 # Useless project files
 .idea
+build
 cmake-build-debug
