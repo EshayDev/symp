@@ -25,6 +25,7 @@ typedef struct {
 
 typedef struct {
     int cputype;
+    int maxplen;  /* max patch lenth */
     long fileoff;
 } patch_off_t;
 
@@ -44,9 +45,9 @@ int parse_arguments(int argc, char **argv);
 
 /* defined in fileio.c */
 void *read_file(FILE *fp, size_t len);
-void *read_file_off(FILE *fp, size_t len, long int offset);
+void *read_file_off(FILE *fp, size_t len, long offset);
 
 /* defined in macho.c */
-bool lookup_symbol_macho(FILE *fp, const char *symbol_name, long int *poffout);
+bool lookup_symbol_macho(FILE *fp, const char *symbol_name, patch_off_t *poffout);
 
 #endif

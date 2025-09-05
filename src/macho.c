@@ -7,10 +7,13 @@
 #include <mach-o/loader.h>
 
 typedef enum {
-    HEX_OFFSET, C_SYMBOL, OBJC_SYMBOL
+    HEX_OFFSET, REGULAR_SYMBOL, OBJC_SYMBOL
 } sym_type_t;
 
 typedef struct {
+    int32_t cputype;
+    uint64_t base_offset;
+
     /* __TEXT vm slide */
     uint64_t vm_slide;
 
@@ -35,14 +38,58 @@ typedef struct {
 
 } macho_info_t;
 
-static sym_type_t determine_sym_type(const char *symbol_name) {
-    sym_type_t type = C_SYMBOL;
-    return type;
+static sym_type_t get_sym_type(const char *symbol_name) {
+    size_t len = strlen(symbol_name);
+    if (symbol_name[0] == '0' &&
+        (symbol_name[1] == 'x' || symbol_name[1] == 'X')) {
+        int i = 1;
+        while (symbol_name[++i] == '0'); /* remove 0 prefix */
+        if (len - i <= 16) {
+            for (char c = symbol_name[i]; c; c = symbol_name[++i]) {
+                if (!(c >= '0' && c <= '9') && !(c >= 'A' && c <= 'F') && !(c >= 'a' && c <= 'f')) {
+                    i = -1;
+                    fprintf(stderr, "symp: warning, invalid char '%c' in hex number, treated as string\n", c);
+                    break;
+                }
+            }
+            if (i != -1) return HEX_OFFSET;
+        }
+    }
+    if ((symbol_name[0] == '+' || symbol_name[0] == '-') &&
+        (symbol_name[1] == '[' && symbol_name[len - 1] == ']')) {
+        int space_cnt = 0;
+        for (int i = 2; i < len; i++) {
+            if (symbol_name[i] == ' ') space_cnt++;
+        }
+        if (space_cnt == 1) return OBJC_SYMBOL;
+        else {
+            fprintf(stderr, "symp: warning, objc symbol should use 1 space to seperate cls and sel, treated as string\n");
+        }
+    }
+    return REGULAR_SYMBOL;
 }
 
-static macho_info_t *parse_load_commands(FILE *fp) {
+/* convert a VALID uint64 hex str to num */
+uint64_t str2uint64(const char* str) {
+    int i = 1;
+    uint64_t num = 0;
+    while (str[++i] == '0'); /* remove 0 prefix */
+    /* assume the length is valid too */
+    for (char c = str[i]; c; c = str[++i]) {
+        num <<= 4;
+        if (c >= '0' && c <= '9') num |= c - '0';
+        else if (c >= 'A' && c <= 'F') num |= c - 'A' + 10;
+        else if (c >= 'a' && c <= 'f') num |= c - 'a' + 10;
+        /* assume all the chars are valid */
+    }
+    return num;
+}
+
+/* fp -> start of macho file */
+static macho_info_t *parse_macho(FILE *fp) {
     macho_info_t *macho_info = malloc(sizeof(macho_info_t));
     memset(macho_info, 0, sizeof(macho_info_t));
+    macho_info->base_offset = ftell(fp);
 
     uint64_t text_vm_slide = 0;
     const struct mach_header_64 *header = read_file(fp, sizeof(struct mach_header_64));
@@ -90,9 +137,12 @@ static macho_info_t *parse_load_commands(FILE *fp) {
         }
         command = (void*)command + command->cmdsize;
     }
+
+    macho_info->cputype = header->cputype;
+    macho_info->vm_slide = text_vm_slide;
+
     free((void *)header);
 
-    macho_info->vm_slide = text_vm_slide;
     if (symtab_cmd != NULL) {
         macho_info->symoff = symtab_cmd->symoff;
         macho_info->nsyms = symtab_cmd->nsyms;
@@ -176,11 +226,9 @@ static uint64_t trie_query(const uint8_t *export, const char *name) {
     return symbol_address;
 }
 
-static long int solve_c_symbol(FILE *fp, const char* symbol_name) {
-    const long int base_offset = ftell(fp);
+static long int solve_symbol(FILE *fp, const macho_info_t *macho_info, const char* symbol_name) {
     uint64_t symbol_address = 0;
-
-    const macho_info_t *macho_info = parse_load_commands(fp);
+    const long int base_offset = macho_info->base_offset;
 
     if (macho_info->export_off != 0) {
         /* export table search */
@@ -197,19 +245,6 @@ static long int solve_c_symbol(FILE *fp, const char* symbol_name) {
     /* these tables are both needed for symtab search and symbol stubs search */
     const struct nlist_64* nl_tbl = read_file_off(fp, macho_info->nsyms * sizeof(struct nlist_64), base_offset + macho_info->symoff);
     const char* str_tbl = read_file_off(fp, macho_info->strsize, base_offset + macho_info->stroff);
-
-    if (macho_info->symoff != 0) {
-        /* symtab search */
-        for (int i = 0; i < macho_info->nsyms; i++) {
-            if ((nl_tbl[i].n_type & N_TYPE) != N_SECT) 
-                continue;
-            if (strcmp(symbol_name, str_tbl + nl_tbl[i].n_un.n_strx) == 0) {
-                /* n_value in nlist is the offset from vmaddr of the image */
-                symbol_address = base_offset + macho_info->vm_slide + nl_tbl[i].n_value;
-                goto sym_ret;
-            }
-        }
-    }
 
     if (macho_info->indirectsymoff != 0 && macho_info->stubs_off != 0) {
         /* symbol stubs search */
@@ -229,26 +264,45 @@ static long int solve_c_symbol(FILE *fp, const char* symbol_name) {
             goto sym_ret;
     }
 
+    if (macho_info->symoff != 0) {
+        /* symtab search */
+        for (int i = 0; i < macho_info->nsyms; i++) {
+            if ((nl_tbl[i].n_type & N_TYPE) != N_SECT) 
+                continue;
+            if (strcmp(symbol_name, str_tbl + nl_tbl[i].n_un.n_strx) == 0) {
+                /* n_value in nlist is the offset from vmaddr of the image */
+                symbol_address = base_offset + macho_info->vm_slide + nl_tbl[i].n_value;
+                goto sym_ret;
+            }
+        }
+    }
+
 sym_ret:
     free((void *)nl_tbl);
     free((void *)str_tbl);
 
 ret:
-    free((void *)macho_info);
-    return (long int)symbol_address;
+    return (long)symbol_address;
 }
 
 /* 
  * return true if found
+ * update fileoff and maxplen of the patch_off_t
  * fp -> start of macho file
  */
-bool lookup_symbol_macho(FILE *fp, const char *symbol_name, long int *fileoffout) {
-    long int symbol_address = 0;
-    switch(determine_sym_type(symbol_name)) {
-    // case HEX_OFFSET:
-    //     break;
-    case C_SYMBOL:
-        symbol_address = solve_c_symbol(fp, symbol_name);
+bool lookup_symbol_macho(FILE *fp, const char *symbol_name, patch_off_t *poffout) {
+    bool found = false;
+    long symbol_address = 0;
+    const macho_info_t *macho_info = parse_macho(fp);
+
+    switch(get_sym_type(symbol_name)) {
+    case HEX_OFFSET: {
+        uint64_t vm_offset = str2uint64(symbol_name);
+        symbol_address = vm_offset + macho_info->base_offset + macho_info->vm_slide;
+        break;
+    }
+    case REGULAR_SYMBOL:
+        symbol_address = solve_symbol(fp, macho_info, symbol_name);
         break;
     // case OBJC_SYMBOL:
     //     break;
@@ -256,8 +310,11 @@ bool lookup_symbol_macho(FILE *fp, const char *symbol_name, long int *fileoffout
         break;
     }
     if (symbol_address != 0) {
-        *fileoffout = symbol_address;
-        return true;
+        found = true;
+        poffout->cputype = macho_info->cputype;
+        poffout->fileoff = symbol_address;
+        poffout->maxplen = macho_info->stub_len;
     }
-    return false;
+    free((void *)macho_info);
+    return found;
 }

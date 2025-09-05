@@ -30,16 +30,11 @@ static char *arch2str(int32_t arch) {
 
 int find_symbol(FILE *fp, int offset, int32_t cputype, patch_off_t *poffs) {
     int found = 0;
-    long int symbol_address;
-    if (o_patch_arch == 0 || cputype & o_patch_arch) {
+    if (o_patch_arch == 0 || (cputype & o_patch_arch) == cputype) {
         g_searched_arch |= cputype;
         fseek(fp, offset, SEEK_SET);
-        if (lookup_symbol_macho(fp, o_symbol, &symbol_address)) {
-            // TODO: optimize...
-            poffs->cputype = cputype;
-            poffs->fileoff = symbol_address;
+        if (lookup_symbol_macho(fp, o_symbol, poffs))
             found = 1;
-        }
         else
             fprintf(stderr, "symbol not found for arch '%s'!\n", arch2str(cputype));
     }
@@ -57,6 +52,10 @@ int patch_file(FILE* fp, patch_off_t poff) {
             fprintf(stderr, "symp: unknown arch in patch_off_t!\n");
             return 1;
         }
+    }
+    if (poff.maxplen != 0 && final_patch->len > poff.maxplen) {
+        fprintf(stderr, "symp: patch length(%zu) exceeded! (max %d)\n", final_patch->len, poff.maxplen);
+        return 1;
     }
     fseek(fp, poff.fileoff, SEEK_SET);
     if (fwrite(final_patch->buf, final_patch->len, 1, fp) != 1) {
@@ -114,6 +113,7 @@ int main(int argc, char **argv) {
         goto err_ret;
     }
 
+    /* offered arch option but some arch is missing.. */
     if (o_patch_arch != 0 && g_searched_arch != o_patch_arch) {
         error = 1;
         int32_t unsearched_arch = o_patch_arch ^ g_searched_arch;
@@ -126,6 +126,7 @@ int main(int argc, char **argv) {
 
     if (npoffs == 0) {
         error = 1;
+        printf("no matches found!\n");
         goto err_ret;
     }
 
@@ -133,7 +134,11 @@ int main(int argc, char **argv) {
         for (int i = 0; i < npoffs; i++) {
             printf("0x%lx\n", poffs[i].fileoff);
         }
-        printf("%d matches found\n", npoffs);
+        if (npoffs == 1)
+            printf("1 match found\n");
+        else
+            printf("%d matches found\n", npoffs);
+
     }
     else if (o_mode == PATCH_MODE) {
         int patched = 0;
@@ -143,7 +148,12 @@ int main(int argc, char **argv) {
                 break;
             }
         }
-        printf("%d(%d) matches patched\n", patched, npoffs);
+        if (patched == 1)
+            printf("1(%d) match patched\n", npoffs);
+        else {
+            fprintf(stderr, "symp: warning, multiple arches used the same patch\n");
+            printf("%d(%d) matches patched\n", patched, npoffs);
+        }
     }
     else {
         error = 1;
