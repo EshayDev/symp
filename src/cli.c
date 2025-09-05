@@ -94,7 +94,6 @@ int parse_arguments(int argc, char **argv) {
                 fprintf(stderr, "symp: only one of -p/-b/-x should be offered\n");
                 goto err;
             }
-
             xlen = 0;
             size_t buf_size = strlen(optarg) >> 1;
             xbuf = malloc(buf_size);

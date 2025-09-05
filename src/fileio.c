@@ -1,7 +1,6 @@
 #include "private.h"
 
-void *read_file(FILE *fp, size_t len)
-{
+void *read_file(FILE *fp, const size_t len) {
     void *data = malloc(len);
     if (fread(data, len, 1, fp) != 1) {
         free(data);
@@ -10,7 +9,8 @@ void *read_file(FILE *fp, size_t len)
     }
     return data;
 }
-void *read_file_off(FILE *fp, size_t len, long int offset) {
+
+void *read_file_off(FILE *fp, const size_t len, const long int offset) {
     fseek(fp, offset, SEEK_SET);
     return read_file(fp, len);
 }

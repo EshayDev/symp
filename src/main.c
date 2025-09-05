@@ -47,7 +47,7 @@ int find_symbol(FILE *fp, int offset, int32_t cputype, patch_off_t *poffs) {
 }
 
 int patch_file(FILE* fp, patch_off_t poff) {
-    data_t *final_patch = &o_patch_data;
+    const data_t *final_patch = &o_patch_data;
     if (o_use_builtin_patch) {
         if (poff.cputype == CPU_TYPE_X86_64)
             final_patch = &builtin_patches[o_builtin_idx].x86_64_p;
@@ -59,8 +59,7 @@ int patch_file(FILE* fp, patch_off_t poff) {
         }
     }
     fseek(fp, poff.fileoff, SEEK_SET);
-    size_t cnt = fwrite(final_patch->buf, final_patch->len, 1, fp);
-    if (cnt != 1) {
+    if (fwrite(final_patch->buf, final_patch->len, 1, fp) != 1) {
         perror("fwrite");
         return 1;
     }
@@ -78,7 +77,10 @@ int main(int argc, char **argv) {
     int npoffs = 0;
     patch_off_t poffs[2]; /* only two archs are supported currently */
 
-    FILE *fp = fopen(o_file, "rb+");
+    char *fmode = "rb";
+    if (o_mode == PATCH_MODE)
+        fmode = "rb+";
+    FILE *fp = fopen(o_file, fmode);
     if (fp == NULL) {
         perror("fopen");
         return 1;
@@ -100,8 +102,8 @@ int main(int argc, char **argv) {
         size_t total_size = nfat_arch * sizeof(struct fat_arch);
         struct fat_arch *archs = read_file(fp, total_size);
         for (int i = 0; i < nfat_arch; i++) {
-            int32_t cputype = OSSwapInt32(archs[i].cputype);
-            int32_t offset = OSSwapInt32(archs[i].offset);
+            const int32_t cputype = OSSwapInt32(archs[i].cputype);
+            const int32_t offset = OSSwapInt32(archs[i].offset);
             npoffs += find_symbol(fp, offset, cputype, poffs + npoffs);
         }
         free(archs);
