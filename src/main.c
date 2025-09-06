@@ -1,4 +1,6 @@
 #include "private.h"
+#include "fileio.h"
+#include "sym/resolve.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -118,7 +120,7 @@ int main(int argc, char **argv) {
         error = 1;
         int32_t unsearched_arch = o_patch_arch ^ g_searched_arch;
         for (int i = 0; i < ARRAY_LEN(cpu_archs); i++) {
-            if (unsearched_arch & cpu_archs[i].cputype)
+            if ((unsearched_arch & cpu_archs[i].cputype) == cpu_archs[i].cputype)
                 fprintf(stderr, "symp: offered arch '%s' not found in the file\n", cpu_archs[i].name);
         }
         goto err_ret;

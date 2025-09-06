@@ -8,7 +8,9 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 
 add_executable(symp
 	src/cli.c
-	src/macho.c
 	src/fileio.c
 	src/builtin.c
+	src/sym/macho.c
+	src/sym/exports.c
+	src/sym/resolve.c
 	src/main.c)

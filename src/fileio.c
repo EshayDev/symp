@@ -1,4 +1,6 @@
-#include "private.h"
+#include "fileio.h"
+
+#include <stdlib.h>
 
 void *read_file(FILE *fp, const size_t len) {
     void *data = malloc(len);

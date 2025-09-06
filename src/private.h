@@ -23,12 +23,6 @@ typedef struct {
 	data_t x86_64_p, arm64_p;
 } builtin_patch_t;
 
-typedef struct {
-    int cputype;
-    int maxplen;  /* max patch lenth */
-    long fileoff;
-} patch_off_t;
-
 /* defined in builtin.c */
 extern builtin_patch_t builtin_patches[];
 extern int builtin_patches_count;
@@ -42,12 +36,5 @@ extern bool o_use_builtin_patch;
 extern int o_builtin_idx;
 
 int parse_arguments(int argc, char **argv);
-
-/* defined in fileio.c */
-void *read_file(FILE *fp, size_t len);
-void *read_file_off(FILE *fp, size_t len, long offset);
-
-/* defined in macho.c */
-bool lookup_symbol_macho(FILE *fp, const char *symbol_name, patch_off_t *poffout);
 
 #endif
