@@ -6,7 +6,15 @@
 
 typedef struct {
     int32_t cputype;
-    uint64_t base_offset;
+    long base_offset;
+
+    /* __TEXT vm slide */
+    uint64_t vm_slide;
+} macho_basic_info_t;
+
+typedef struct {
+    int32_t cputype;
+    long base_offset;
 
     /* __TEXT vm slide */
     uint64_t vm_slide;
@@ -29,16 +37,52 @@ typedef struct {
     uint64_t stubs_size;
     uint32_t indirectsym_idx;
     uint32_t stub_len;
+} macho_symbol_info_t;
 
-} macho_info_t;
+typedef struct {
+    int32_t cputype;
+    long base_offset;
+
+    /* __TEXT vm slide */
+    uint64_t vm_slide;
+
+    /* __const and __cstring section */
+    uint32_t cdata_off;
+    uint64_t cdata_size;
+    uint32_t const_off;
+    uint64_t const_size;
+    uint32_t cstring_off;
+    uint64_t cstring_size;
+
+    /* objc sections */
+    uint32_t objc_classlist_off;
+    uint64_t objc_classlist_size;
+    uint32_t objc_data_off;
+    uint64_t objc_data_size;
+    uint32_t objc_const_off;
+    uint64_t objc_const_size;
+    uint32_t objc_methlist_off;
+    uint64_t objc_methlist_size;
+    uint32_t objc_methname_off;
+    uint64_t objc_methname_size;
+    uint32_t objc_selrefs_off;
+    uint64_t objc_selrefs_size;
+} macho_objc_info_t;
 
 /* 
  * defined in macho.c
  * fp -> start of macho file 
  */
-macho_info_t *parse_macho(FILE *fp);
+macho_basic_info_t *parse_basic_info(FILE *fp);
 
-/* defined in exports.c */
-uint64_t trie_query(const uint8_t *export, const char *name);
+macho_symbol_info_t *parse_symbol_info(FILE *fp);
+
+macho_objc_info_t *parse_objc_info(FILE *fp);
+
+/* defined in symbol.c */
+long solve_symbol(FILE *fp, const macho_symbol_info_t *macho_info, const char* symbol_name);
+
+/* defined in objcmeta.c */
+long solve_objc_symbol(FILE *fp, const macho_objc_info_t *macho_info, const char* symbol_name);
 
 #endif
