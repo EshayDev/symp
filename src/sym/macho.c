@@ -105,35 +105,15 @@ macho_objc_info_t *parse_objc_info(FILE *fp) {
     const struct mach_header_64 *header = read_file(fp, sizeof(struct mach_header_64));
     const struct load_command* commands = read_file(fp, header->sizeofcmds);
     const struct load_command* command = commands;
+    uint64_t dataend = 0;
     macho_info->cputype = header->cputype;
     for (int i = 0; i < header->ncmds; i++) {
         if (command->cmd == LC_SEGMENT_64) {
             const struct segment_command_64 *seg_cmd = (void *)command;
-            if (strcmp(seg_cmd->segname, SEG_TEXT) == 0) { /* __TEXT */
-                /* addr_vm - text_vm = addr_file - text_file */
-                macho_info->vm_slide = seg_cmd->fileoff - seg_cmd->vmaddr;
-
-                const struct section_64 *text_sect = (void *)(seg_cmd + 1);
-                for (int j = 0; j < seg_cmd->nsects; j++) {
-                    if (strcmp(text_sect[j].sectname, "__const") == 0) {
-                        macho_info->const_off = text_sect[j].offset;
-                        macho_info->const_size = text_sect[j].size;
-                    }
-                    else if (strcmp(text_sect[j].sectname, "__cstring") == 0) {
-                        macho_info->cstring_off = text_sect[j].offset;
-                        macho_info->cstring_size = text_sect[j].size;
-                    }
-                    else if (strcmp(text_sect[j].sectname, "__objc_methlist") == 0) {
-                        macho_info->objc_methlist_off = text_sect[j].offset;
-                        macho_info->objc_methlist_size = text_sect[j].size;
-                    }
-                    else if (strcmp(text_sect[j].sectname, "__objc_methname") == 0) {
-                        macho_info->objc_methname_off = text_sect[j].offset;
-                        macho_info->objc_methname_size = text_sect[j].size;
-                    }
-                }
-            }
-            else if (strncmp(seg_cmd->segname, "__DATA", 6) == 0) {
+            if (strncmp(seg_cmd->segname, "__DATA", 6) == 0) {
+                if (dataend < seg_cmd->fileoff + seg_cmd->filesize)
+                    dataend = seg_cmd->fileoff + seg_cmd->filesize;
+                
                 const struct section_64 *data_sect = (void *)(seg_cmd + 1);
                 for (int j = 0; j < seg_cmd->nsects; j++) {
                     if (strncmp(data_sect[j].sectname, "__objc_classlist", 16) == 0) {
@@ -141,27 +121,12 @@ macho_objc_info_t *parse_objc_info(FILE *fp) {
                         macho_info->objc_classlist_off = data_sect[j].offset;
                         macho_info->objc_classlist_size = data_sect[j].size;
                     }
-                    else if (strcmp(data_sect[j].sectname, "__objc_const") == 0) {
-                        macho_info->objc_const_off = data_sect[j].offset;
-                        macho_info->objc_const_size = data_sect[j].size;
-                    }
-                    else if (strcmp(data_sect[j].sectname, "__objc_data") == 0) {
-                        macho_info->objc_data_off = data_sect[j].offset;
-                        macho_info->objc_data_size = data_sect[j].size;
-                    }
-                    else if (strcmp(data_sect[j].sectname, "__data") == 0) {
-                        macho_info->cdata_off = data_sect[j].offset;
-                        macho_info->cdata_size = data_sect[j].size;
-                    }
-                    else if (strcmp(data_sect[j].sectname, "__objc_selrefs") == 0) {
-                        macho_info->objc_selrefs_off = data_sect[j].offset;
-                        macho_info->objc_selrefs_size = data_sect[j].size;
-                    }
                 }
             }
         }
         command = (void*)command + command->cmdsize;
     }
+    macho_info->dataend_off = dataend;
     free((void *)header);
     free((void *)commands);
     return macho_info;

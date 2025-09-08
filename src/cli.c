@@ -14,7 +14,7 @@ int o_builtin_idx = -1;
 
 static void usage() {
     puts("symp - a symbol patching tool");
-    puts("usage: symp [options] symbol file");
+    puts("usage: symp [options] -- <symbol> <file>");
     puts("options:");
     puts("  -a, --arch <arch>         arch of the binary to be patched, only x86_64 and arm64 are supported");
     puts("  -p, --patch <patch>       use builtin patches, available: ret, ret0, ret1, ret2");

@@ -4,10 +4,11 @@ project(symp VERSION 1.0
 			 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 
-add_compile_options(-Wall -Wshadow -fsanitize=address,undefined)
-add_link_options(-Wall -Wshadow -fsanitize=address,undefined)
+# add_compile_options(-Wall -Wshadow -fsanitize=address,undefined)
+# add_link_options(-Wall -Wshadow -fsanitize=address,undefined)
 
 add_executable(symp
 	src/cli.c

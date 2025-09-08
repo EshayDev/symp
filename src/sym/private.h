@@ -43,30 +43,12 @@ typedef struct {
     int32_t cputype;
     long base_offset;
 
-    /* __TEXT vm slide */
-    uint64_t vm_slide;
-
-    /* __const and __cstring section */
-    uint32_t cdata_off;
-    uint64_t cdata_size;
-    uint32_t const_off;
-    uint64_t const_size;
-    uint32_t cstring_off;
-    uint64_t cstring_size;
+    /* __DATA ending */
+    uint64_t dataend_off;
 
     /* objc sections */
     uint32_t objc_classlist_off;
     uint64_t objc_classlist_size;
-    uint32_t objc_data_off;
-    uint64_t objc_data_size;
-    uint32_t objc_const_off;
-    uint64_t objc_const_size;
-    uint32_t objc_methlist_off;
-    uint64_t objc_methlist_size;
-    uint32_t objc_methname_off;
-    uint64_t objc_methname_size;
-    uint32_t objc_selrefs_off;
-    uint64_t objc_selrefs_size;
 } macho_objc_info_t;
 
 /* 
