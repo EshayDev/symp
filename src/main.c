@@ -153,7 +153,8 @@ int main(int argc, char **argv) {
         if (patched == 1)
             printf("1(%d) match patched\n", npoffs);
         else {
-            fprintf(stderr, "symp: warning, multiple arches used the same patch\n");
+            if (!o_builtin_idx)
+                fprintf(stderr, "symp: warning, multiple arches used the same patch\n");
             printf("%d(%d) matches patched\n", patched, npoffs);
         }
     }

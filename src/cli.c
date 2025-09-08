@@ -134,10 +134,13 @@ int parse_arguments(int argc, char **argv) {
         goto err;
     }
 
-    if (xbuf != NULL || o_builtin_idx != -1) {
+    if (xbuf != NULL) {
         o_mode = PATCH_MODE;
         o_patch_data.len = xlen;
         o_patch_data.buf = xbuf;
+    }
+    else if (o_use_builtin_patch) {
+        o_mode = PATCH_MODE;
     }
     o_symbol = argv[optind++];
     o_file = argv[optind++];
