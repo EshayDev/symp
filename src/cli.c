@@ -134,7 +134,7 @@ int parse_arguments(int argc, char **argv) {
         goto err;
     }
 
-    if (xbuf != NULL) {
+    if (xbuf != NULL || o_builtin_idx != -1) {
         o_mode = PATCH_MODE;
         o_patch_data.len = xlen;
         o_patch_data.buf = xbuf;
