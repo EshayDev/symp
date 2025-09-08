@@ -19,3 +19,5 @@ add_executable(symp
 	src/sym/objcmeta.c
 	src/sym/resolve.c
 	src/main.c)
+
+install(TARGETS symp DESTINATION /usr/local/bin)
