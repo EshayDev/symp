@@ -13,6 +13,12 @@
 
 ## 安装
 
+### 下载二进制
+
+Releases: https://github.com/Antibioticss/symp/releases
+
+可以下载`pkg`安装包，默认安装到`/usr/local/bin`目录
+
 ### 从源码编译
 
 克隆仓库并使用`cmake`编译
@@ -81,5 +87,5 @@ symp -b new.bin -- '_old_func' file
 
 ## LICENSE
 
-[MIT LICENSE][LICENSE]
+[MIT LICENSE](LICENSE)
 

@@ -13,6 +13,12 @@ A patching tool based on symbols in Mach-O files, patches symbol functions with 
 
 ## Installation
 
+### Download binary
+
+Releases: https://github.com/Antibioticss/symp/releases
+
+`pkg` installer is available, which installs to `/usr/local/bin` by default
+
 ### Build from source
 
 Clone this repo and build it with `cmake`
@@ -81,4 +87,4 @@ Currently supports three types of `symbol`
 
 ## LICENSE
 
-[MIT LICENSE][LICENSE]
+[MIT LICENSE](LICENSE)
