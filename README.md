@@ -2,26 +2,27 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-A patching tool based on symbols in Mach-O files, patches symbol functions with ease
+A Mach-O symbol-based tool for easily patching functions by symbol.
 
 **Supported:**
 
  - Symbol table `LC_SYMTAB`
  - Export table `LC_DYLD_INFO/LC_DYLD_EXPORTS_TRIE`
  - Import table `S_SYMBOL_STUBS`
- - `ObjC` metadata
+ - `Obj-C` metadata
 
 ## Installation
 
-### Download binary
+### Pre-built binary
 
-Releases: https://github.com/Antibioticss/symp/releases
+Grab the latest release from
+[here.](https://github.com/Antibioticss/symp/releases/latest)
 
-`pkg` installer is available, which installs to `/usr/local/bin` by default
+A `pkg` installer is also available; it installs to `/usr/local/bin` by default.
 
 ### Build from source
 
-Clone this repo and build it with `cmake`
+Clone the repo and build with `cmake`.
 
 ```sh
 git clone https://github.com/Antibioticss/symp.git
@@ -30,7 +31,7 @@ mkdir build && cd build
 cmake .. && make
 ```
 
-Install to `/usr/local/bin`
+Install to `/usr/local/bin`:
 
 ```sh
 sudo make install
@@ -42,49 +43,49 @@ sudo make install
 symp [options] -- <symbol> <file>
 ```
 
-### Quick examples
+### Example usage
 
-Write hex data to the file offset corresponding to the virtual address (as shown in the disassembler)
+Write hex bytes to the file offset corresponding to a virtual address (as shown in your disassembler):
 
 ```sh
 symp -x 909090 -- 0x10002a704 file
 ```
 
-Make an OC function return 1
+Make an Obj-C function return 1:
 
 ```sh
 symp -p ret1 -- '-[MyClass isSmart]' file
 ```
 
-Overwrite a function with a new binary (pure instructions)
+Overwrite a function with a new binary (instructions only):
 
 ```sh
 symp -b new.bin -- '_old_func' file
 ```
 
-### Symbol type
+### Symbol types
 
-Currently supports three types of `symbol`
+Three symbol formats are supported:
 
 | Type           | Description                                                  | Example            |
 | -------------- | ------------------------------------------------------------ | ------------------ |
-| Hex offset     | the hex offset in memory, auto-detect symbols start with  `0x` or `0X` | `0x100007e68`      |
-| `ObjC` symbol  | won't demangle class names, start with `+`/`-`, brakets with `[]` | `-[MyClass hello]` |
-| regular symbol | symbols not meeting the above two conditions will be treated as this type | `_printf`          |
+| Hex address     | virtual address in hex; auto-detected when it starts with `0x` or `0X` | `0x100007e68`      |
+| `ObjC` symbol   | does not demangle class names; starts with `+`/`-`, enclosed in `[]` | `-[MyClass hello]` |
+| Regular symbol  | anything that does not match the two cases above                      | `_printf`          |
 
 ### Arguments
 
 | Argument        | Description                                                  | Example            |
 | --------------- | ------------------------------------------------------------ | ------------------ |
-| `-p`/`--patch`  | use builtin patch, available value: `ret`, `ret0`, `ret1`, `ret2` | `-p ret1`          |
+| `-p`/`--patch`  | use a built-in patch; available values: `ret`, `ret0`, `ret1`, `ret2` | `-p ret1`          |
 | `-b`/`--binary` | use a binary file as the patch                               | `-b data.bin`      |
-| `-x`/`--hex`    | use hex data as the patch (case insensitive, can include spaces) | `-x "C0 03 5F D6"` |
-| `-a`/`--arch`   | select an arch in `FAT`file, currently only supports `x86_64` and `arm64` | `-a arm64`         |
+| `-x`/`--hex`    | use hex data as the patch (case-insensitive; spaces allowed) | `-x "C0 03 5F D6"` |
+| `-a`/`--arch`   | select an arch in a `FAT` file; currently supports `x86_64` and `arm64` | `-a arm64`         |
 
-`-p/b/x` There should be only one of these, when none offered, it would print the offset of the symbol in the whole file
+Only one of `-p`, `-b`, or `-x` may be specified. If none is provided, the tool prints the symbol's file offset.
 
-`-a` There can be several of this, when not offered, it would search symbol in all architectures of the given file
+`-a` can be passed multiple times. If omitted, the tool searches all architectures in the file.
 
-## LICENSE
+## License
 
 [MIT LICENSE](LICENSE)
