@@ -81,10 +81,26 @@ Three symbol formats are supported:
 | `-b`/`--binary` | use a binary file as the patch                               | `-b data.bin`      |
 | `-x`/`--hex`    | use hex data as the patch (case-insensitive; spaces allowed) | `-x "C0 03 5F D6"` |
 | `-a`/`--arch`   | select an arch in a `FAT` file; currently supports `x86_64` and `arm64` | `-a arm64`         |
+| `-q`/`--quiet`  | suppress match count messages (useful for command substitution) | `-q`               |
 
 Only one of `-p`, `-b`, or `-x` may be specified. If none is provided, the tool prints the symbol's file offset.
 
 `-a` can be passed multiple times. If omitted, the tool searches all architectures in the file.
+
+## Integration with xsp
+
+`symp` can be used with `xsp` for powerful symbol-based hex patching workflows:
+
+```bash
+# Basic workflow: Find symbol offset and use it for targeted patching
+xsp --offset $(symp -q 'symbol_name' binary_file) -f binary_file hex1 hex2
+
+# Example: Replace NOPs at a specific function with breakpoints
+xsp --offset $(symp -q '_vulnerable_function' /usr/bin/target) -f /usr/bin/target "90 90 90 90" "CC CC CC CC"
+
+# Example: Patch Objective-C method
+xsp --offset $(symp -q '-[MyClass sensitiveMethod]' MyApp) -f MyApp "original_bytes" "patched_bytes"
+```
 
 ## License
 
