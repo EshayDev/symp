@@ -34,6 +34,7 @@ extern int o_patch_arch;
 extern data_t o_patch_data;
 extern bool o_use_builtin_patch;
 extern int o_builtin_idx;
+extern bool o_quiet;
 
 int parse_arguments(int argc, char **argv);
 

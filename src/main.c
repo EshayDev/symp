@@ -136,11 +136,13 @@ int main(int argc, char **argv) {
         for (int i = 0; i < npoffs; i++) {
             printf("0x%lx\n", poffs[i].fileoff);
         }
-        if (npoffs == 1)
-            printf("1 match found\n");
-        else
-            printf("%d matches found\n", npoffs);
-
+        if (!o_quiet) {
+            // one match for an arch at most
+            if (npoffs == 1)
+                printf("1 match found\n");
+            else
+                printf("%d matches found\n", npoffs);
+        }
     }
     else if (o_mode == PATCH_MODE) {
         int patched = 0;
