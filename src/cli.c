@@ -11,6 +11,7 @@ int o_patch_arch = 0;
 data_t o_patch_data = {0, NULL};
 bool o_use_builtin_patch = false;
 int o_builtin_idx = -1;
+bool o_quiet = false;
 
 static void usage() {
     puts("symp - a symbol patching tool");
@@ -20,6 +21,7 @@ static void usage() {
     puts("  -p, --patch <patch>       use builtin patches, available: ret, ret0, ret1, ret2");
     puts("  -b, --binary <binary>     use a binary file as patch");
     puts("  -x, --hex <hex string>    hex string of the patch");
+    puts("  -q, --quiet               suppress match count messages (useful for command substitution)");
 }
 
 int parse_arguments(int argc, char **argv) {
@@ -36,11 +38,12 @@ int parse_arguments(int argc, char **argv) {
             {"patch",  required_argument, 0, 'p'},
             {"binary", required_argument, 0, 'b'},
             {"hex",    required_argument, 0, 'x'},
+            {"quiet",  no_argument, 0, 'q'},
             {"help",   no_argument, 0, 'h'},
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        int c = getopt_long(argc, argv, "a:p:b:x:h", long_options, &option_index);
+        int c = getopt_long(argc, argv, "a:p:b:x:qh", long_options, &option_index);
         if (c == -1)
             break;
         switch (c) {
@@ -113,6 +116,9 @@ int parse_arguments(int argc, char **argv) {
                 goto err;
             }
             xlen >>= 1;
+            break;
+        case 'q':
+            o_quiet = true;
             break;
         case 'h':
             usage();

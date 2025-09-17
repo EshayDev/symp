@@ -133,13 +133,18 @@ int main(int argc, char **argv) {
     }
 
     if (o_mode == LOOKUP_MODE) {
-        for (int i = 0; i < npoffs; i++) {
-            printf("0x%lx\n", poffs[i].fileoff);
+        if (o_quiet) {
+            // In quiet mode, only output the first match for command substitution
+            printf("0x%lx\n", poffs[0].fileoff);
+        } else {
+            for (int i = 0; i < npoffs; i++) {
+                printf("0x%lx\n", poffs[i].fileoff);
+            }
+            if (npoffs == 1)
+                printf("1 match found\n");
+            else
+                printf("%d matches found\n", npoffs);
         }
-        if (npoffs == 1)
-            printf("1 match found\n");
-        else
-            printf("%d matches found\n", npoffs);
 
     }
     else if (o_mode == PATCH_MODE) {
