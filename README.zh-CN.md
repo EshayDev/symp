@@ -80,10 +80,26 @@ symp -b new.bin -- '_old_func' file
 | `-b`/`--binary` | 使用一个二进制文件作为补丁 | `-b data.bin` |
 | `-x`/`--hex` | 使用十六进制数据作为补丁（不要求大小写，可以有空格） | `-x "C0 03 5F D6"` |
 |`-a`/`--arch`|指定`FAT`文件中的某个架构，目前仅支持`x86_64`和`arm64`|`-a arm64`|
+| `-q`/`--quiet`  | 不要输出匹配数量统计（用于指令集成） | `-q` |
 
 `-p/b/x`这三个参数只能有其中一个，当都没有提供时，会输出该符号在整个文件中的偏移量
 
 `-a`可以有多个，当未提供`-a`参数时，默认会查找文件中的所有架构
+
+## 与 xsp 集成
+
+`symp` 可以和 `xsp` 一起使用，实现强大的基于符号的16进制补丁修改
+
+```bash
+# 基本原理: 查找符号地址并用来搜索补丁
+xsp --offset $(symp -q 'symbol_name' binary_file) -f binary_file hex1 hex2
+
+# 例子: 把某个函数中的 NOP 替换为断点
+xsp --offset $(symp -q '_vulnerable_function' /usr/bin/target) -f /usr/bin/target "90 90 90 90" "CC CC CC CC"
+
+# 例子: 修改一个 Objective-C 函数
+xsp --offset $(symp -q '-[MyClass sensitiveMethod]' MyApp) -f MyApp "original_bytes" "patched_bytes"
+```
 
 ## LICENSE
 
